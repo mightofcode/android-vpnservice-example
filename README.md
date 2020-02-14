@@ -3,14 +3,14 @@ android vpnservice
 
 ## Background/About this project
 
-a android vpnservice example 
-proxy udp and tcp 
+an android vpnservice example   
+proxy udp and tcp   
 
 ## Requirements
 
 Android                        
 
-### Usage
+## Usage
 
 点击start打开vpn  
 点击dns进行一次dns请求  
