@@ -9,6 +9,7 @@ import android.util.Log;
 
 import com.mocyx.basic_client.bio.BioTcpHandler;
 import com.mocyx.basic_client.bio.BioUdpHandler;
+import com.mocyx.basic_client.bio.NioSingleThreadTcpHandler;
 import com.mocyx.basic_client.config.Config;
 import com.mocyx.basic_client.protocol.tcpip.Packet;
 import com.mocyx.basic_client.util.ByteBufferPool;
@@ -49,7 +50,8 @@ public class LocalVPNService extends VpnService {
 
         executorService = Executors.newFixedThreadPool(10);
         executorService.submit(new BioUdpHandler(deviceToNetworkUDPQueue, networkToDeviceQueue, this));
-        executorService.submit(new BioTcpHandler(deviceToNetworkTCPQueue, networkToDeviceQueue, this));
+        //executorService.submit(new BioTcpHandler(deviceToNetworkTCPQueue, networkToDeviceQueue, this));
+        executorService.submit(new NioSingleThreadTcpHandler(deviceToNetworkTCPQueue, networkToDeviceQueue, this));
 
         executorService.submit(new VPNRunnable(vpnInterface.getFileDescriptor(),
                 deviceToNetworkUDPQueue, deviceToNetworkTCPQueue, networkToDeviceQueue));
@@ -142,13 +144,11 @@ public class LocalVPNService extends VpnService {
                     try {
                         ByteBuffer bufferFromNetwork = networkToDeviceQueue.take();
                         bufferFromNetwork.flip();
-
                         while (bufferFromNetwork.hasRemaining()) {
                             int w = vpnOutput.write(bufferFromNetwork);
                             if (w > 0) {
                                 MainActivity.downByte.addAndGet(w);
                             }
-
                             if (Config.logRW) {
                                 Log.d(TAG, "vpn write " + w);
                             }
@@ -156,7 +156,6 @@ public class LocalVPNService extends VpnService {
                     } catch (Exception e) {
                         Log.i(TAG, "WriteVpnThread fail", e);
                     }
-
                 }
 
             }
@@ -165,15 +164,12 @@ public class LocalVPNService extends VpnService {
         @Override
         public void run() {
             Log.i(TAG, "Started");
-
             FileChannel vpnInput = new FileInputStream(vpnFileDescriptor).getChannel();
             FileChannel vpnOutput = new FileOutputStream(vpnFileDescriptor).getChannel();
             Thread t = new Thread(new WriteVpnThread(vpnOutput, networkToDeviceQueue));
             t.start();
-
             try {
                 ByteBuffer bufferToNetwork = null;
-
                 while (!Thread.interrupted()) {
                     bufferToNetwork = ByteBufferPool.acquire();
                     int readBytes = vpnInput.read(bufferToNetwork);

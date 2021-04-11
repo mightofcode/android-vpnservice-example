@@ -28,9 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class BioTcpHandler implements Runnable {
 
     BlockingQueue<Packet> queue;
-
     ConcurrentHashMap<String, TcpTunnel> tunnels = new ConcurrentHashMap();
-
 
     private static int HEADER_SIZE = Packet.IP4_HEADER_SIZE + Packet.TCP_HEADER_SIZE;
 
@@ -73,7 +71,10 @@ public class BioTcpHandler implements Runnable {
     }
 
     private static void sendTcpPack(TcpTunnel tunnel, byte flag, byte[] data) {
-
+//
+//        if(true){
+//            return;
+//        }
         int dataLen = 0;
         if (data != null) {
             dataLen = data.length;
@@ -448,17 +449,14 @@ public class BioTcpHandler implements Runnable {
         while (true) {
             try {
                 Packet currentPacket = queue.take();
-
                 InetAddress destinationAddress = currentPacket.ip4Header.destinationAddress;
-
                 TCPHeader tcpHeader = currentPacket.tcpHeader;
                 //Log.d(TAG, String.format("get pack %d tcp " + tcpHeader.printSimple() + " ", currentPacket.packId));
-
                 int destinationPort = tcpHeader.destinationPort;
                 int sourcePort = tcpHeader.sourcePort;
                 String ipAndPort = destinationAddress.getHostAddress() + ":" +
                         destinationPort + ":" + sourcePort;
-
+                //
                 while (true) {
                     String s = this.tunnelCloseMsgQueue.poll();
                     if (s == null) {
@@ -468,8 +466,7 @@ public class BioTcpHandler implements Runnable {
                         Log.i(TAG, String.format("remove tunnel %s", ipAndPort));
                     }
                 }
-
-
+                //
                 if (!tunnels.containsKey(ipAndPort)) {
                     TcpTunnel tcpTunnel = initTunnel(currentPacket);
                     tcpTunnel.tunnelKey = ipAndPort;

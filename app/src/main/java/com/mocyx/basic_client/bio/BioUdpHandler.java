@@ -25,6 +25,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  *
+ * BIO UDP处理器
+ * 从queue获取udp包，转发给指定的dns
+ *
  */
 public class BioUdpHandler implements Runnable {
 

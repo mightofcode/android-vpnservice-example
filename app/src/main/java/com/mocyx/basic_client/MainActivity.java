@@ -156,9 +156,9 @@ public class MainActivity extends AppCompatActivity {
                     HttpURLConnection yc = (HttpURLConnection) yahoo.openConnection();
 
                     yc.setRequestProperty("Connection", "close");
-                    yc.setConnectTimeout(3000);
+                    yc.setConnectTimeout(30000);
 
-                    yc.setReadTimeout(3000);
+                    yc.setReadTimeout(30000);
                     BufferedReader in = new BufferedReader(
                             new InputStreamReader(yc.getInputStream()));
                     String inputLine;
@@ -171,7 +171,7 @@ public class MainActivity extends AppCompatActivity {
                     long te = System.currentTimeMillis();
                     Log.i(TAG, String.format("http cost %d", te - ts));
 
-                    System.out.printf("1http readline end\n");
+                    System.out.printf("http readline end\n");
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
