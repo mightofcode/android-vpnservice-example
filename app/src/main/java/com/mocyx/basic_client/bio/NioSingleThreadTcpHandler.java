@@ -58,19 +58,15 @@ public class NioSingleThreadTcpHandler implements Runnable {
         public String tunnelKey;
         public InetSocketAddress sourceAddress;
         public InetSocketAddress destinationAddress;
-        private VpnService vpnService;
         public SocketChannel remote;
         public TCBStatus tcbStatus = TCBStatus.SYN_SENT;
-        //
-        //private ByteBuffer localInBuffer = ByteBuffer.allocate(4 * 1024);
-        //private ByteBuffer localOutBuffer = ByteBuffer.allocate(8 * 1024);
-        private ByteBuffer remoteInBuffer = ByteBuffer.allocate(4 * 1024);
         private ByteBuffer remoteOutBuffer = ByteBuffer.allocate(8 * 1024);
         //
         public boolean upActive = true;
         public boolean downActive = true;
 
         public int packId = 1;
+        public long timestamp=0L;
 
         int synCount = 0;
 
@@ -81,9 +77,6 @@ public class NioSingleThreadTcpHandler implements Runnable {
         TcpPipe pipe = new TcpPipe();
         pipe.sourceAddress = new InetSocketAddress(packet.ip4Header.sourceAddress, packet.tcpHeader.sourcePort);
         pipe.destinationAddress = new InetSocketAddress(packet.ip4Header.destinationAddress, packet.tcpHeader.destinationPort);
-        pipe.vpnService = vpnService;
-        //tunnel.networkToDeviceQueue = networkToDeviceQueue;
-        //tunnel.tunnelCloseMsgQueue = tunnelCloseMsgQueue;
         pipe.remote = SocketChannel.open();
         objAttrUtil.setAttr(pipe.remote, "type", "remote");
         objAttrUtil.setAttr(pipe.remote, "pipe", pipe);
@@ -93,6 +86,7 @@ public class NioSingleThreadTcpHandler implements Runnable {
         //very important, protect
         vpnService.protect(pipe.remote.socket());
         boolean b1 = pipe.remote.connect(pipe.destinationAddress);
+        pipe.timestamp=System.currentTimeMillis();
         Log.i(TAG, String.format("initPipe %s %s", pipe.destinationAddress, b1));
         return pipe;
     }
@@ -108,7 +102,7 @@ public class NioSingleThreadTcpHandler implements Runnable {
         Packet packet = IpUtil.buildTcpPacket(pipe.destinationAddress, pipe.sourceAddress, flag,
                 pipe.myAcknowledgementNum, pipe.mySequenceNum, pipe.packId);
         pipe.packId += 1;
-        ByteBuffer byteBuffer = ByteBufferPool.acquire();
+        ByteBuffer byteBuffer = ByteBuffer.allocate(HEADER_SIZE + dataLen);
         //
         byteBuffer.position(HEADER_SIZE);
         if (data != null) {
@@ -250,14 +244,10 @@ public class NioSingleThreadTcpHandler implements Runnable {
         Log.i(TAG, String.format("closeUpStream %d", pipe.tunnelId));
         try {
             if (pipe.remote != null && pipe.remote.isOpen()) {
-                //  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 if (pipe.remote.isConnected()) {
                     pipe.remote.shutdownOutput();
                 }
-//                } else {
-//                    pipe.remote.close();
-//                    pipe.remote = null;
-//                }
+
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -384,14 +374,9 @@ public class NioSingleThreadTcpHandler implements Runnable {
     private void closeDownStream(TcpPipe pipe) throws Exception {
         Log.i(TAG, String.format("closeDownStream %d", pipe.tunnelId));
         if (pipe.remote != null && pipe.remote.isConnected()) {
-//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             pipe.remote.shutdownInput();
             int ops = getKey(pipe.remote).interestOps() & (~SelectionKey.OP_READ);
             getKey(pipe.remote).interestOps(ops);
-//                pipe.remote.close();
-//            } else {
-//                pipe.remote.close();
-//            }
         }
 
         sendTcpPack(pipe, (byte) (TCPHeader.FIN | Packet.TCPHeader.ACK), null);
@@ -413,7 +398,8 @@ public class NioSingleThreadTcpHandler implements Runnable {
         SelectionKey key = (SelectionKey) objAttrUtil.getAttr(socketChannel, "key");
         if (type.equals("remote")) {
             boolean b1 = socketChannel.finishConnect();
-            Log.i(TAG, String.format("connect %s", pipe.destinationAddress));
+            Log.i(TAG, String.format("connect %s %s %s", pipe.destinationAddress, b1,System.currentTimeMillis()-pipe.timestamp));
+            pipe.timestamp=System.currentTimeMillis();
             pipe.remoteOutBuffer.flip();
             key.interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
         }
@@ -460,7 +446,6 @@ public class NioSingleThreadTcpHandler implements Runnable {
                 }
             }
         }
-
     }
 
     private long tick = 0;
