@@ -214,7 +214,7 @@ public class NioSingleThreadTcpHandler implements Runnable {
         if (!channel.isConnected()) {
             Log.i(TAG, "not yet connected");
             SelectionKey key = (SelectionKey) objAttrUtil.getAttr(channel, "key");
-            int ops=key.interestOps() | SelectionKey.OP_WRITE;
+            int ops = key.interestOps() | SelectionKey.OP_WRITE;
             key.interestOps(ops);
             System.currentTimeMillis();
             buffer.compact();
@@ -386,7 +386,7 @@ public class NioSingleThreadTcpHandler implements Runnable {
         if (pipe.remote != null && pipe.remote.isConnected()) {
 //            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             pipe.remote.shutdownInput();
-            int ops=getKey(pipe.remote).interestOps() & (~SelectionKey.OP_READ);
+            int ops = getKey(pipe.remote).interestOps() & (~SelectionKey.OP_READ);
             getKey(pipe.remote).interestOps(ops);
 //                pipe.remote.close();
 //            } else {
@@ -406,7 +406,7 @@ public class NioSingleThreadTcpHandler implements Runnable {
     }
 
     private void doConnect(SocketChannel socketChannel) throws Exception {
-        Log.i(TAG,String.format("tick %s",tick));
+        Log.i(TAG, String.format("tick %s", tick));
         //
         String type = (String) objAttrUtil.getAttr(socketChannel, "type");
         TcpPipe pipe = (TcpPipe) objAttrUtil.getAttr(socketChannel, "pipe");
@@ -415,18 +415,18 @@ public class NioSingleThreadTcpHandler implements Runnable {
             boolean b1 = socketChannel.finishConnect();
             Log.i(TAG, String.format("connect %s", pipe.destinationAddress));
             pipe.remoteOutBuffer.flip();
-            key.interestOps(SelectionKey.OP_READ|SelectionKey.OP_WRITE);
+            key.interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
         }
 
     }
 
     private void doWrite(SocketChannel socketChannel) throws Exception {
-        Log.i(TAG,String.format("tick %s",tick));
+        Log.i(TAG, String.format("tick %s", tick));
         TcpPipe pipe = (TcpPipe) objAttrUtil.getAttr(socketChannel, "pipe");
         boolean flushed = tryFlushWrite(pipe, socketChannel);
         if (flushed) {
             SelectionKey key1 = (SelectionKey) objAttrUtil.getAttr(socketChannel, "key");
-            key1.interestOps( SelectionKey.OP_READ);
+            key1.interestOps(SelectionKey.OP_READ);
         }
     }
 
@@ -463,7 +463,8 @@ public class NioSingleThreadTcpHandler implements Runnable {
 
     }
 
-    private  long tick=0;
+    private long tick = 0;
+
     @Override
     public void run() {
         try {
@@ -471,7 +472,7 @@ public class NioSingleThreadTcpHandler implements Runnable {
             while (true) {
                 handleReadFromVpn();
                 handleSockets();
-                tick+=1;
+                tick += 1;
                 Thread.sleep(1);
             }
         } catch (Exception e) {
